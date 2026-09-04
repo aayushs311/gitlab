@@ -1,0 +1,2 @@
+#!/bin/sh
+npx --no tsx src/main.ts "${@}"

@@ -1,0 +1,21 @@
+---
+default:
+  image: node:20.9.0
+
+stages:
+  - lint
+  - test
+
+lint:
+  stage: lint
+  needs: []
+  script: |
+    npm install
+    npm run lint
+
+test:
+  stage: test
+  needs: []
+  script: |
+    npm install
+    npm test

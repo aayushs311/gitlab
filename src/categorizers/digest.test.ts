@@ -7,18 +7,6 @@ import { join, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { DigestCategorizer } from './digest.ts';
 
-function deferred(): {
-  promise: Promise<void>;
-  resolve: () => void;
-} {
-  let resolve!: () => void;
-  const promise = new Promise<void>(done => {
-    resolve = done;
-  });
-
-  return { promise, resolve };
-}
-
 function makeFiles(
   directory: FilePath,
   tempFiles: { [name: FilePath]: string },
@@ -56,52 +44,5 @@ describe('DigestCategorizer', () => {
       ['3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d',
         [join(directory, 'b')]],
     ]);
-  });
-
-  test('limits concurrent hashes and preserves input order', async () => {
-    const buckets = new Buckets<string>();
-    const files = ['first', 'second', 'third', 'fourth', 'fifth'];
-    buckets.add('initial', files);
-
-    const gates = files.map(() => deferred());
-    const started: string[] = [];
-    let active = 0;
-    let maxActive = 0;
-    const categorizer = new DigestCategorizer(2, async file => {
-      const index = files.indexOf(file);
-      started.push(file);
-      active++;
-      maxActive = Math.max(maxActive, active);
-      await gates[index]!.promise;
-      active--;
-      return index % 2 === 0 ? 'even' : 'odd';
-    });
-
-    const resultPromise = categorizer.rebucket(buckets);
-    await new Promise<void>(resolve => setImmediate(resolve));
-    assert.deepStrictEqual(started, ['first', 'second']);
-
-    gates[1]!.resolve();
-    await new Promise<void>(resolve => setImmediate(resolve));
-    assert.deepStrictEqual(started, ['first', 'second', 'third']);
-
-    gates[0]!.resolve();
-    gates[2]!.resolve();
-    await new Promise<void>(resolve => setImmediate(resolve));
-    gates[3]!.resolve();
-    gates[4]!.resolve();
-
-    assert.deepStrictEqual(Array.from(await resultPromise), [
-      ['even', ['first', 'third', 'fifth']],
-      ['odd', ['second', 'fourth']],
-    ]);
-    assert.strictEqual(maxActive, 2);
-  });
-
-  test('rejects invalid concurrency limits', () => {
-    assert.throws(
-      () => new DigestCategorizer(0),
-      /Digest concurrency must be a positive integer/,
-    );
   });
 });

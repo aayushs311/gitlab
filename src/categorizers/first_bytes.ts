@@ -1,4 +1,4 @@
-import { openSync, closeSync, readSync } from 'node:fs';
+import { open } from 'node:fs/promises';
 import type { Categorizer } from './types.ts';
 import type { FilePath } from '../types.ts';
 import type { SortableKey } from '../buckets.ts';
@@ -12,17 +12,14 @@ function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes).map(toHex).join('');
 }
 
-function getFirstNBytes(n: number, file: FilePath): Uint8Array {
-  let fd;
+async function getFirstNBytes(n: number, file: FilePath): Promise<Uint8Array> {
+  const handle = await open(file, 'r');
   const bytes = new Uint8Array(n);
 
   try {
-    fd = openSync(file, 'r');
-    readSync(fd, bytes, 0, n, null);
+    await handle.read(bytes, 0, n, 0);
   } finally {
-    if (fd !== undefined) {
-      closeSync(fd);
-    }
+    await handle.close();
   }
 
   return bytes;
@@ -31,12 +28,15 @@ function getFirstNBytes(n: number, file: FilePath): Uint8Array {
 export class FirstBytesCategorizer implements Categorizer {
   constructor(private numBytes: number) {}
 
-  rebucket(buckets: Buckets<SortableKey>) {
+  async rebucket(buckets: Buckets<SortableKey>) {
     const firstBytesBuckets = new Buckets<string>();
+    const files = Array.from(buckets.allFiles());
+    const firstBytes = await Promise.all(
+      files.map(file => getFirstNBytes(this.numBytes, file)),
+    );
 
-    for (const file of buckets.allFiles()) {
-      const hex = bytesToHex(getFirstNBytes(this.numBytes, file));
-      firstBytesBuckets.add(hex, [file]);
+    for (let index = 0; index < files.length; index++) {
+      firstBytesBuckets.add(bytesToHex(firstBytes[index]!), [files[index]!]);
     }
 
     return firstBytesBuckets;

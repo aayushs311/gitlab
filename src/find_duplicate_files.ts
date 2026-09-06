@@ -1,15 +1,19 @@
 import type { Categorizer } from './categorizers/index.ts';
 import type { FilePath } from './types.ts';
-import { Buckets } from './buckets.ts';
+import { Buckets, type SortableKey } from './buckets.ts';
 import { walk } from './walk.ts';
 
-export function findDuplicateFiles(directory: FilePath, categorizers: Categorizer[]) {
+export async function findDuplicateFiles(directory: FilePath, categorizers: Categorizer[]): Promise<Buckets<SortableKey>> {
   let buckets = new Buckets();
+  const files: FilePath[] = [];
 
-  buckets.add('initial', walk(directory));
+  for await (const file of walk(directory)) {
+    files.push(file);
+  }
+  buckets.add('initial', files);
 
   for (const categorizer of categorizers) {
-    buckets = categorizer.rebucket(buckets).removeNonDuplicates();
+    buckets = (await categorizer.rebucket(buckets)).removeNonDuplicates();
   }
 
   return buckets;

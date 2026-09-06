@@ -1,7 +1,7 @@
 import { findDuplicateFiles } from './find_duplicate_files.ts';
 import categorizers from './categorizers/index.ts';
 
-async function main(): Promise<void> {
+function main(): void {
   const directory = process.argv[2];
 
   if (typeof directory === 'undefined') {
@@ -11,7 +11,7 @@ async function main(): Promise<void> {
   }
 
   try {
-    const buckets = await findDuplicateFiles(directory, categorizers);
+    const buckets = findDuplicateFiles(directory, categorizers);
     if (buckets.size > 0) console.log(buckets.toString());
   } catch (error) {
     process.exitCode = 2;
@@ -19,4 +19,4 @@ async function main(): Promise<void> {
   }
 }
 
-await main();
+main();

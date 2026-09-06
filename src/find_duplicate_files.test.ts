@@ -13,8 +13,8 @@ function addFixturesPath(duplicates: FilePath[][]): FilePath[][] {
 }
 
 describe('findDuplicateFiles', () => {
-  test('detects the correct duplicate files', async () => {
-    const result = await findDuplicateFiles(fixturesPath, categorizers);
+  test('detects the correct duplicate files', () => {
+    const result = findDuplicateFiles(fixturesPath, categorizers);
 
     assert.deepStrictEqual(result.sorted(), addFixturesPath([
       [

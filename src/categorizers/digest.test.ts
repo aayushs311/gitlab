@@ -26,11 +26,11 @@ function makeFiles(
 }
 
 describe('DigestCategorizer', () => {
-  test('hashes files correctly', () => {
+  test('hashes files correctly', async () => {
     const directory = mkdtempSync(`${tmpdir()}${sep}`);
     const categorizer = new DigestCategorizer();
 
-    assert.deepStrictEqual(Array.from(categorizer.rebucket(makeFiles(directory, {
+    assert.deepStrictEqual(Array.from(await categorizer.rebucket(makeFiles(directory, {
       empty: '',
       another_empty: '',
       a: 'a',

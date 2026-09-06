@@ -1,18 +1,15 @@
 import type { FilePath } from './types.ts';
-import { opendir } from 'node:fs/promises';
+import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-export async function* walk(directory: FilePath): AsyncGenerator<FilePath> {
-  const entries = await opendir(directory);
-  for await (const dirent of entries) {
+export function* walk(directory: FilePath): Generator<FilePath> {
+  for (const dirent of readdirSync(directory, { withFileTypes: true })) {
     const path = join(directory, dirent.name);
 
     if (dirent.isFile()) {
       yield path;
     } else if (dirent.isDirectory()) {
-      for await (const file of walk(path)) {
-        yield file;
-      }
+      yield* walk(path);
     }
   }
 }
